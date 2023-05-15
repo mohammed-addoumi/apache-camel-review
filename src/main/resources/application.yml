@@ -1,0 +1,62 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+
+jms:
+  activemq:
+    broker-url: tcp://localhost:61617
+    username: admin
+    password: admin
+  artemis:
+    broker-url: tcp://localhost:61616
+    username: admin
+    password: admin
+
+
+sftp:
+  jump:
+    host: localhost:2222
+    username: user
+    password: pass
+
+  srbm:
+    host: localhost:2223
+    username: user
+    password: pass
+
+
+service:
+  routes:
+    -
+      from: file:in
+      routeId: fileToArtemisAndSftpRoute
+      processor: fileProcessor
+      to:
+        - "activemq:my-queue"
+        - "sftp://${sftp.jump.username}@${sftp.jump.host}/upload?password=${sftp.jump.password}"
+    #-
+     # from: activemq:my-queue
+      #routeId: activemqToSftpRoute
+      #processor: jmsProcessor
+      #to:
+       # - "sftp://${sftp.jump.username}@${sftp.jump.host}/upload?password=${sftp.jump.password}"
+    -
+      from: "sftp://${sftp.jump.username}@${sftp.jump.host}/upload?password=${sftp.jump.password}&readLock=changed&readLockCheckInterval=5000"
+      routeId: sftpToSftpRoute
+      processor: sftpProcessor
+      to:
+        - "sftp://${sftp.srbm.username}@${sftp.srbm.host}/upload?password=${sftp.srbm.password}"
+    #-
+      #from: artemis:my-queue
+      #routeId: artemisToSftpRoute
+      #processor: jmsProcessor
+      #to:
+       # - "sftp://${sftp.jump.username}@${sftp.jump.host}/upload?password=${sftp.jump.password}"
+
+
